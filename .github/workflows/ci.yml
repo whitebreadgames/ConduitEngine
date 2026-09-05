@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux / GCC / C++17 / Debug
+            os: ubuntu-latest
+            std: 17
+            build_type: Debug
+          - name: Linux / GCC / C++20 / Release
+            os: ubuntu-latest
+            std: 20
+            build_type: Release
+          - name: macOS / AppleClang / C++17 / Debug
+            os: macos-latest
+            std: 17
+            build_type: Debug
+          - name: Windows / MSVC / C++17 / Debug
+            os: windows-latest
+            std: 17
+            build_type: Debug
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Warnings are errors in CI, per AGENTS.md §4. Locally they stay warnings so a
+      # work-in-progress build is not blocked.
+      - name: Configure
+        run: >
+          cmake -B build
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          -DCONDUIT_CXX_STANDARD=${{ matrix.std }}
+          -DCONDUIT_WARNINGS_AS_ERRORS=ON
+
+      - name: Build
+        run: cmake --build build --config ${{ matrix.build_type }} --parallel
+
+      - name: Test
+        run: ctest --test-dir build --build-config ${{ matrix.build_type }} --output-on-failure

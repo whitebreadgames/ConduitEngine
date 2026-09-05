@@ -4,7 +4,8 @@
 Read [`AGENTS.md`](./AGENTS.md) first. Completed items move to [`DONE.md`](./DONE.md)
 in the same commit as the work.
 
-**Status:** Pre-alpha. Version `0.0.0`. Nothing is built yet.
+**Status:** Pre-alpha. Version `0.1.0-dev`. Phase 0 complete — the project builds and
+tests clean on GCC/Clang/MSVC with warnings as errors. Phase 1 is next.
 
 ### Conventions
 - `[ ]` open · `[~]` in progress · `[!]` blocked (reason must be stated)
@@ -14,26 +15,12 @@ in the same commit as the work.
 
 ---
 
-## Phase 0 — Foundation  ← *start here*
+## Phase 0 — Foundation ✅ *complete — see [`DONE.md`](./DONE.md)*
 
-- [ ] **0.1 CMake skeleton.** Root `CMakeLists.txt`, C++17 baseline with C++20 opt-in,
-      out-of-source build, `ConduitCore` / `ConduitEditor` / `ConduitRuntime` targets stubbed.
-      Warnings-as-errors (`-Wall -Wextra -Wpedantic` / `/W4`). Platform detection in `cmake/`.
-- [ ] **0.2 Directory scaffold.** Create the tree from `AGENTS.md` §5 with placeholder
-      `.gitkeep` files, so path conventions are fixed before code lands.
-- [ ] **0.3 Version header.** `engine/core/Version.h` exposing `CONDUIT_VERSION_MAJOR/MINOR/PATCH`,
-      a compile-time semantic version string, and a separate `kSceneFormatVersion` /
-      `kProjectFormatVersion` pair (file format versions are independent of engine version).
-- [ ] **0.4 `.gitignore` and `.editorconfig`.** Build dirs, IDE noise, 4-space/no-tab enforcement.
-- [ ] **0.5 Test harness.** Pick a single-header MIT/BSD test framework, vendor it under
-      `thirdparty/`, wire `ctest`, land one trivially passing test to prove the loop.
-- [ ] **0.6 CI workflow.** Build + test on Linux, macOS, Windows. Warnings-as-errors enforced.
-      *Parallel-safe with 0.5.*
-
-## Phase 1 — Core
+## Phase 1 — Core  ← *start here*
 
 - [ ] **1.1 Fundamental types.** `engine/core/Types.h` — fixed-width aliases, `Conduit` namespace
-      root, no-copy/no-move helper macros. **Dep:** 0.2
+      root, no-copy/no-move helper macros.
 - [ ] **1.2 `Handle<T>`.** Opaque index + 16-bit generation counter. Stale handles must resolve to
       null, never to a recycled object. This is the backbone of every public engine API. **Dep:** 1.1
 - [ ] **1.3 Assertions & logging.** `CONDUIT_ASSERT` compiled out in release; a leveled logger with
@@ -170,6 +157,17 @@ in the same commit as the work.
   migration ergonomics matter more than parse speed here. Blocks 7.1.
 - **D4 — Reflection mechanism.** Macro-based registration vs. code generation. Drives the
   inspector (8.4) and serialization (7.2); decide once, live with it. Blocks 7.2 and 8.4.
+
+## Follow-ups raised during Phase 0
+
+- [ ] **F1 Clang-format config.** `AGENTS.md` §4 specifies a style; nothing enforces it
+      mechanically yet. Add `.clang-format` and a CI format check.
+- [ ] **F2 Sanitizer build.** An ASan/UBSan CI job. Cheap now, and the allocators in 1.4
+      are exactly the code that needs it.
+- [ ] **F3 Test-harness output for CI.** The harness prints human-readable results only.
+      If CI annotation matters, add JUnit XML output.
+- [ ] **F4 Per-test `ctest` registration.** Currently the whole suite is one `ctest` entry.
+      Splitting it gives parallel execution and finer-grained failure reporting.
 
 ## Backlog (not scheduled)
 

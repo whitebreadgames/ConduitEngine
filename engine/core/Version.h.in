@@ -1,0 +1,119 @@
+// Conduit — engine and file format versions.
+//
+// This file is GENERATED from engine/core/Version.h.in by CMake. Do not edit the
+// generated copy; edit the template.
+//
+// Two version families live here and they are deliberately independent:
+//
+//   * The ENGINE version follows SemVer 2.0.0 and is owned by project() in the
+//     root CMakeLists.txt. Pre-1.0 the minor version carries breaking changes.
+//   * The FILE FORMAT versions are plain monotonic integers. A user's project must
+//     keep loading across engine releases, so the format only moves when the bytes
+//     on disk actually change. Bump one of these and you owe a migration step and a
+//     golden-file test (AGENTS.md §6).
+
+#ifndef CONDUIT_CORE_VERSION_H
+#define CONDUIT_CORE_VERSION_H
+
+#include <cstdint>
+
+// clang-format off
+#define CONDUIT_VERSION_MAJOR      @PROJECT_VERSION_MAJOR@
+#define CONDUIT_VERSION_MINOR      @PROJECT_VERSION_MINOR@
+#define CONDUIT_VERSION_PATCH      @PROJECT_VERSION_PATCH@
+#define CONDUIT_VERSION_PRERELEASE "@CONDUIT_VERSION_PRERELEASE@"
+#define CONDUIT_VERSION_STRING     "@CONDUIT_VERSION_STRING@"
+// clang-format on
+
+/// Packs a semantic version into a single comparable integer.
+#define CONDUIT_VERSION_ENCODE(major, minor, patch) \
+    (((major) * 1000000) + ((minor) * 1000) + (patch))
+
+#define CONDUIT_VERSION \
+    CONDUIT_VERSION_ENCODE(CONDUIT_VERSION_MAJOR, CONDUIT_VERSION_MINOR, CONDUIT_VERSION_PATCH)
+
+namespace Conduit
+{
+
+/// Engine version, following SemVer 2.0.0.
+struct Version
+{
+    std::uint32_t major = CONDUIT_VERSION_MAJOR;
+    std::uint32_t minor = CONDUIT_VERSION_MINOR;
+    std::uint32_t patch = CONDUIT_VERSION_PATCH;
+};
+
+inline constexpr Version kEngineVersion{};
+
+/// Full version string, including any pre-release identifier ("0.1.0-dev").
+inline constexpr const char* kEngineVersionString = CONDUIT_VERSION_STRING;
+
+/// True while the public API is explicitly unstable, i.e. before 1.0.0.
+inline constexpr bool kApiUnstable = (CONDUIT_VERSION_MAJOR == 0);
+
+// --- File format versions ---------------------------------------------------
+//
+// Loader contract (AGENTS.md §6):
+//   equal  -> load normally
+//   older  -> back up the original file, then migrate through every intermediate
+//             step in order
+//   newer  -> refuse to load and report the engine version required
+// Unknown fields are always preserved, never silently discarded.
+
+/// Version stamped into scene files written by this build.
+inline constexpr std::uint32_t kSceneFormatVersion = 1;
+
+/// Version stamped into project files written by this build.
+inline constexpr std::uint32_t kProjectFormatVersion = 1;
+
+/// Oldest scene format this build can still migrate forward.
+inline constexpr std::uint32_t kMinSupportedSceneFormatVersion = 1;
+
+/// Oldest project format this build can still migrate forward.
+inline constexpr std::uint32_t kMinSupportedProjectFormatVersion = 1;
+
+/// How a stored file format version relates to what this build writes.
+enum class FormatCompatibility
+{
+    Current,      ///< Matches this build; load directly.
+    Migratable,   ///< Older but supported; back up, then migrate.
+    TooOld,       ///< Older than any migration path this build carries.
+    TooNew,       ///< Written by a newer engine; refuse and report.
+};
+
+/// Classifies a file format version against what this build supports.
+/// Pure and allocation-free so loaders can call it before touching any data.
+constexpr FormatCompatibility ClassifyFormatVersion(std::uint32_t fileVersion,
+                                                    std::uint32_t currentVersion,
+                                                    std::uint32_t minSupportedVersion) noexcept
+{
+    if (fileVersion > currentVersion)
+    {
+        return FormatCompatibility::TooNew;
+    }
+    if (fileVersion == currentVersion)
+    {
+        return FormatCompatibility::Current;
+    }
+    if (fileVersion < minSupportedVersion)
+    {
+        return FormatCompatibility::TooOld;
+    }
+    return FormatCompatibility::Migratable;
+}
+
+// --- Runtime accessors ------------------------------------------------------
+//
+// The constants above are compile-time. These accessors exist for callers that
+// link against ConduitCore rather than compiling against this header: tools,
+// script bindings, and anything reading the version across a library boundary.
+
+/// Engine version string of the linked library, including any pre-release tag.
+const char* GetEngineVersionString() noexcept;
+
+/// Engine version of the linked library.
+Version GetEngineVersion() noexcept;
+
+} // namespace Conduit
+
+#endif // CONDUIT_CORE_VERSION_H
