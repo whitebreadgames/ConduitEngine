@@ -70,6 +70,27 @@ inline void RecordFailure(const char* file, int line, const std::string& message
     CurrentFailures().push_back(out.str());
 }
 
+/// Records a failed boolean check. Keeping the branch inside a function avoids
+/// MSVC's constant-condition warning when a test intentionally checks a constexpr.
+inline void Check(bool condition, const char* expression, const char* file, int line)
+{
+    if (!condition)
+    {
+        RecordFailure(file, line, std::string("expected: ") + expression);
+    }
+}
+
+/// Records a failed requirement and returns the condition so the caller can
+/// abandon the current test without branching directly on a constant expression.
+inline bool Require(bool condition, const char* expression, const char* file, int line)
+{
+    if (!condition)
+    {
+        RecordFailure(file, line, std::string("required: ") + expression);
+    }
+    return condition;
+}
+
 /// Detects whether a type can be written to an ostream. Written as a C++17 trait
 /// rather than a requires-clause because C++17 is the baseline (AGENTS.md §4).
 template <typename T, typename = void>
@@ -99,6 +120,24 @@ std::enable_if_t<!IsStreamable<T>::value, std::string> Describe(const T&)
     return "<non-printable value>";
 }
 
+template <typename Actual, typename Expected>
+void CheckEqual(const Actual& actual,
+                const Expected& expected,
+                const char* actualExpression,
+                const char* expectedExpression,
+                const char* file,
+                int line)
+{
+    if (!(actual == expected))
+    {
+        RecordFailure(file,
+                      line,
+                      std::string("expected: ") + actualExpression + " == "
+                          + expectedExpression + "\n    actual: " + Describe(actual)
+                          + "\n  expected: " + Describe(expected));
+    }
+}
+
 int RunAll(const char* filter);
 
 } // namespace Conduit::Testing
@@ -118,37 +157,23 @@ int RunAll(const char* filter);
 #define CONDUIT_CHECK(expr)                                                       \
     do                                                                            \
     {                                                                             \
-        if (!(expr))                                                              \
-        {                                                                         \
-            ::Conduit::Testing::RecordFailure(__FILE__, __LINE__,                 \
-                                              "expected: " #expr);                \
-        }                                                                         \
+        ::Conduit::Testing::Check(static_cast<bool>(expr), #expr, __FILE__, __LINE__); \
     } while (false)
 
 #define CONDUIT_CHECK_EQ(actual, expected)                                        \
     do                                                                            \
     {                                                                             \
-        const auto& conduitActual = (actual);                                     \
-        const auto& conduitExpected = (expected);                                 \
-        if (!(conduitActual == conduitExpected))                                  \
-        {                                                                         \
-            ::Conduit::Testing::RecordFailure(                                    \
-                __FILE__, __LINE__,                                               \
-                std::string("expected: " #actual " == " #expected "\n    actual: ") \
-                    + ::Conduit::Testing::Describe(conduitActual)                 \
-                    + "\n  expected: "                                            \
-                    + ::Conduit::Testing::Describe(conduitExpected));             \
-        }                                                                         \
+        ::Conduit::Testing::CheckEqual(                                            \
+            (actual), (expected), #actual, #expected, __FILE__, __LINE__);         \
     } while (false)
 
 /// Records a failure and abandons the rest of the test body.
 #define CONDUIT_REQUIRE(expr)                                                     \
     do                                                                            \
     {                                                                             \
-        if (!(expr))                                                              \
+        if (!::Conduit::Testing::Require(                                         \
+                static_cast<bool>(expr), #expr, __FILE__, __LINE__))              \
         {                                                                         \
-            ::Conduit::Testing::RecordFailure(__FILE__, __LINE__,                 \
-                                              "required: " #expr);                \
             return;                                                               \
         }                                                                         \
     } while (false)

@@ -11,6 +11,10 @@ Rolling summary of shipped work. Newest first.
 
 ## Unreleased — `0.1.0` (in progress)
 
+### Phase 1 — Core *(in progress)*
+- **Fundamental types.** Exact-width signed and unsigned integer aliases plus reusable
+  no-copy and no-move helpers establish the shared core vocabulary. — *2026-09-05*
+
 ### Phase 0 — Foundation *(complete)*
 - **Buildable project skeleton.** CMake 3.20+ with `ConduitCore` / `ConduitRuntime` /
   `ConduitEditor` / `ConduitTests` targets, out-of-source enforced, C++17 baseline with a

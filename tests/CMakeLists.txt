@@ -3,6 +3,7 @@
 add_executable(ConduitTests
     framework/TestMain.cpp
     FrameworkTests.cpp
+    TypesTests.cpp
     VersionTests.cpp
 )
 

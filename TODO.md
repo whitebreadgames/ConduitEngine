@@ -4,8 +4,8 @@
 Read [`AGENTS.md`](./AGENTS.md) first. Completed items move to [`DONE.md`](./DONE.md)
 in the same commit as the work.
 
-**Status:** Pre-alpha. Version `0.1.0-dev`. Phase 0 complete — the project builds and
-tests clean on GCC/Clang/MSVC with warnings as errors. Phase 1 is next.
+**Status:** Pre-alpha. Version `0.1.0-dev`. Phase 0 complete. Phase 1 is underway;
+fundamental types are complete and `Handle<T>` is next.
 
 ### Conventions
 - `[ ]` open · `[~]` in progress · `[!]` blocked (reason must be stated)
@@ -19,8 +19,6 @@ tests clean on GCC/Clang/MSVC with warnings as errors. Phase 1 is next.
 
 ## Phase 1 — Core  ← *start here*
 
-- [ ] **1.1 Fundamental types.** `engine/core/Types.h` — fixed-width aliases, `Conduit` namespace
-      root, no-copy/no-move helper macros.
 - [ ] **1.2 `Handle<T>`.** Opaque index + 16-bit generation counter. Stale handles must resolve to
       null, never to a recycled object. This is the backbone of every public engine API. **Dep:** 1.1
 - [ ] **1.3 Assertions & logging.** `CONDUIT_ASSERT` compiled out in release; a leveled logger with
